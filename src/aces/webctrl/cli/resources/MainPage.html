@@ -1,0 +1,203 @@
+<!--
+  BSD 3-Clause License
+  Copyright (c) 2025, Automatic Controls Equipment Systems, Inc.
+  Contributors: Cameron Vogt (@cvogt729)
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>
+      Web Terminal
+    </title>
+    <link rel="stylesheet" type="text/css" href="../../../../../root/webapp/main.css"/>
+    <script>
+      function setStatus(color, message){
+        statusBox.style.color = color;
+        statusBox.innerText = message;
+      }
+      function resize(input){
+        const styles = window.getComputedStyle(input);
+        hiddenSpan.style.fontFamily = styles.fontFamily;
+        hiddenSpan.style.fontSize = styles.fontSize;
+        hiddenSpan.style.fontStyle = styles.fontStyle;
+        hiddenSpan.style.fontWeight = styles.fontWeight;
+        hiddenSpan.style.letterSpacing = styles.letterSpacing;
+        hiddenSpan.style.textTransform = styles.textTransform;
+        hiddenSpan.style.borderLeftWidth = styles.borderLeftWidth;
+        hiddenSpan.style.borderRightWidth = styles.borderRightWidth;
+        hiddenSpan.style.paddingLeft = styles.paddingLeft;
+        hiddenSpan.style.paddingRight = styles.paddingRight;
+        hiddenSpan.innerText = input.value;
+        input.style.width = hiddenSpan.offsetWidth+"px";
+        if (input.tagName=="TEXTAREA"){
+          input.style.height = "1px";
+          input.style.height = input.scrollHeight+"px";
+        }
+      }
+      function exec(){
+        if (execButton.disabled){
+          return;
+        }
+        {
+          const val = cmdField.value.trim().toLowerCase();
+          if (val==="clear" || val==="cls"){
+            if (commands.length==0 || cmdField.value!==commands[commands.length-1]){
+              commands.push(cmdField.value);
+              if (commands.length>1000){
+                commands.shift();
+              }
+            }
+            commandIndex = commands.length;
+            cmdField.value = "";
+            lastCommand = "";
+            setStatus("#50C878","Submission complete.");
+            resultField.value = welcomeText;
+            resize(resultField);
+            window.scrollTo(0, document.body.scrollHeight);
+            resize(cmdField);
+            cmdField.focus();
+            return;
+          }
+        }
+        execButton.disabled = true;
+        cmdField.disabled = true;
+        const req = new XMLHttpRequest();
+        req.open("POST","__PREFIX__/index?type=set");
+        req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+        req.timeout = 3600000;
+        req.onreadystatechange = function(){
+          if (this.readyState===4){
+            if (this.status===200){
+              if (commands.length==0 || cmdField.value!==commands[commands.length-1]){
+                commands.push(cmdField.value);
+                if (commands.length>1000){
+                  commands.shift();
+                }
+              }
+              commandIndex = commands.length;
+              cmdField.value = "";
+              lastCommand = "";
+              setStatus("#50C878","Submission complete.");
+            }else if (this.status==0){
+              setStatus("red", "Request timed out.");
+            }else{
+              setStatus("red", "HTTP Error "+this.status);
+            }
+            execButton.disabled = false;
+            cmdField.disabled = false;
+            resize(cmdField);
+            cmdField.focus();
+          }
+        };
+        setStatus("white","Submitting...");
+        //resultField.value = resultField.value+">"+cmdField.value+"\n";
+        //resize(resultField);
+        //window.scrollTo(0, document.body.scrollHeight);
+        req.send(
+          "content="+encodeURIComponent(cmdField.value.replaceAll('\r',''))+
+          "&id="+encodeURIComponent(processID)+
+          "&key="+encodeURIComponent(processKey)
+        );
+      }
+      function retrieve(){
+        const req = new XMLHttpRequest();
+        req.open("POST","__PREFIX__/index?type=get");
+        req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+        req.timeout = 900000;
+        req.onreadystatechange = function(){
+          if (this.readyState===4){
+            if (this.status===200){
+              resultField.value = resultField.value+this.responseText;
+              resize(resultField);
+              window.scrollTo(0, document.body.scrollHeight);
+              setTimeout(retrieve, 0);
+            }else if (this.status==0){
+              setStatus("red", "Request timed out.");
+            }else{
+              setStatus("red", "HTTP Error "+this.status);
+            }
+          }
+        };
+        req.send(
+          "id="+encodeURIComponent(processID)+
+          "&key="+encodeURIComponent(processKey)
+        );
+      }
+    </script>
+  </head>
+  <body>
+    <div style="text-align:center">
+      <textarea id="resultField" style="resize:none;text-align:left" wrap="off" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" readonly></textarea>
+      <br>
+      <div class="divGrouping" title="You may use SHIFT+ENTER to create multi-line commands. The up and down arrow keys can be used to navigate through command history.">
+        <label for="cmdField">></label>
+        <textarea id="cmdField" oninput="resize(this)" style="resize:none;text-align:left;margin-bottom:-0.5em" wrap="off" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+        <button class="e" id="execButton" onclick="exec()">Submit</button>
+      </div>
+      <br>
+      <div class="divGrouping">
+        <label>Status:</label>
+        <span id="statusBox"></span>
+      </div>
+      <br>
+      <span id="hiddenSpan" style="min-width:3em;color:black;display:inline-block;position:absolute;left:-100000px;white-space:pre"></span>
+    </div>
+    <script>
+      var linux = __LINUX__;
+      var processID = "__ID__";
+      var processKey = "__KEY__";
+      var welcomeText = (linux?" ------- Bash Shell ------- ":" ------- Windows Command Line ------- ")+"\n\n";
+      var commands = [];
+      var commandIndex = 0;
+      var lastCommand = "";
+      setStatus("white","Loaded.");
+      const result = document.getElementById("resultField");
+      result.value = welcomeText;
+      resize(result);
+      const cmd = document.getElementById("cmdField");
+      resize(cmd);
+      cmd.addEventListener("keydown",function(e){
+        if (!e.shiftKey){
+          if (e.key==="Enter"){
+            e.preventDefault();
+            exec();
+          }else{
+            if (e.key==="ArrowUp"){
+              e.preventDefault();
+              if (commandIndex>0){
+                if (commandIndex==commands.length){
+                  lastCommand = cmd.value;
+                }
+                --commandIndex;
+                cmd.value = commands[commandIndex];
+                resize(cmd);
+              }
+            }else if (e.key==="ArrowDown"){
+              e.preventDefault();
+              if (commandIndex<commands.length-1){
+                ++commandIndex;
+                cmd.value = commands[commandIndex];
+                resize(cmd);
+              }else if (commandIndex==commands.length-1){
+                commandIndex = commands.length;
+                cmd.value = lastCommand;
+                resize(cmd);
+              }
+            }
+          }
+        }
+      });
+      window.onbeforeunload = ()=>{
+        const req = new XMLHttpRequest();
+        req.open("POST","__PREFIX__/index?type=kill");
+        req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+        req.timeout = 100;
+        req.send(
+          "id="+encodeURIComponent(processID)+
+          "&key="+encodeURIComponent(processKey)
+        );
+      };
+      retrieve();
+    </script>
+  </body>
+</html>
