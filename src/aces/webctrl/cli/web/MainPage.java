@@ -34,7 +34,7 @@ public class MainPage extends ServletBase {
         }
         case "get":{
           try{
-            if (p.waitForContent(System.currentTimeMillis()+700000L)){
+            if (p.waitForContent(System.currentTimeMillis()+50000L)){
               if (Initializer.stop){
                 res.sendError(500, "Add-on is shutting down.");
                 return;

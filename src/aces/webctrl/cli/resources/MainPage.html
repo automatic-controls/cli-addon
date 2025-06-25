@@ -103,7 +103,7 @@
         const req = new XMLHttpRequest();
         req.open("POST","__PREFIX__/index?type=get");
         req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
-        req.timeout = 900000;
+        req.timeout = 60000;
         req.onreadystatechange = function(){
           if (this.readyState===4){
             if (this.status===200){
@@ -113,6 +113,8 @@
               setTimeout(retrieve, 0);
             }else if (this.status==0){
               setStatus("red", "Request timed out.");
+            }else if (this.status==504){
+              setTimeout(retrieve, 0);
             }else{
               setStatus("red", "HTTP Error "+this.status);
             }
@@ -187,6 +189,7 @@
           }
         }
       });
+      cmd.focus();
       window.onbeforeunload = ()=>{
         const req = new XMLHttpRequest();
         req.open("POST","__PREFIX__/index?type=kill");
