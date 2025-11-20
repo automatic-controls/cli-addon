@@ -561,6 +561,12 @@ public class Utility {
     return arr;
   }
   /**
+   * Reverses the order and XORs each character with 4.
+   */
+  public static String obfuscate(String str){
+    return new String(obfuscate(str.toCharArray()));
+  }
+  /**
    * @return a {@code String} containing the stack trace of the given {@code Throwable}.
    */
   public static String getStackTrace(Throwable t){

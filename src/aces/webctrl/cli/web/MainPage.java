@@ -1,9 +1,6 @@
 package aces.webctrl.cli.web;
 import aces.webctrl.cli.core.*;
 import javax.servlet.http.*;
-// maybe use these for an API eventually
-//url:java-jwt-4.5.0.jar:https://repo1.maven.org/maven2/com/auth0/java-jwt/4.5.0/java-jwt-4.5.0.jar
-//url:java-jwt-4.5.0-sources.jar:https://repo1.maven.org/maven2/com/auth0/java-jwt/4.5.0/java-jwt-4.5.0-sources.jar
 public class MainPage extends ServletBase {
   @Override public void exec(final HttpServletRequest req, final HttpServletResponse res) throws Throwable {
     final String type = req.getParameter("type");
@@ -56,7 +53,7 @@ public class MainPage extends ServletBase {
             return;
           }
           try{
-            p.writeLine(content.replaceAll("\n",System.lineSeparator()));
+            p.writeLine(Utility.obfuscate(content).replaceAll("\n",System.lineSeparator()));
           }catch(Throwable t){
             Initializer.log(t);
             res.sendError(500, "Failed to write content.");

@@ -11,6 +11,15 @@
     </title>
     <link rel="stylesheet" type="text/css" href="../../../../../root/webapp/main.css"/>
     <script>
+      function obfuscate(val) {
+        if (val == null) { return val; }
+        let size = val.length;
+        let retVal = new String();
+        for (let i = size - 1; i >= 0; i--) {
+          retVal += String.fromCharCode(val.charCodeAt(i)^4);
+        }
+        return retVal;
+      }
       function setStatus(color, message){
         statusBox.style.color = color;
         statusBox.innerText = message;
@@ -94,7 +103,7 @@
         //resize(resultField);
         //window.scrollTo(0, document.body.scrollHeight);
         req.send(
-          "content="+encodeURIComponent(cmdField.value.replaceAll('\r',''))+
+          "content="+encodeURIComponent(obfuscate(cmdField.value.replaceAll('\r','')))+
           "&id="+encodeURIComponent(processID)+
           "&key="+encodeURIComponent(processKey)
         );
