@@ -2,7 +2,7 @@ package aces.webctrl.cli.web;
 import aces.webctrl.cli.core.*;
 import javax.servlet.http.*;
 public class MainPage extends ServletBase {
-  @Override public void exec(final HttpServletRequest req, final HttpServletResponse res) throws Throwable {
+  @Override public void exec(final HttpServletRequest req, final HttpServletResponse res, final boolean post) throws Throwable {
     final String type = req.getParameter("type");
     if (type==null){
       final ShellProcess p = new ShellProcess();
@@ -13,6 +13,10 @@ public class MainPage extends ServletBase {
         .replace("__LINUX__", String.valueOf(Initializer.LINUX))
       );
     }else{
+      if (!post){
+        res.setStatus(405);
+        return;
+      }
       final String id = req.getParameter("id");
       final String key = req.getParameter("key");
       if (id==null || key==null){
